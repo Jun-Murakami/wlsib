@@ -1,30 +1,12 @@
-# React + TypeScript + Vite
+# レンズ何持ってく？
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+https://lensdore-c55ce.web.app/
 
-Currently, two official plugins are available:
+カメラマン向けのWebアプリ
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+その名の通り、レンズの焦点距離と各種撮影条件を指定すると、
+撮影画像のシミュレーションが表示できます。
+撮影時のレンズ・機材選びのお供にどうぞ。
 
-## Expanding the ESLint configuration
+<img width="1197" alt="スクリーンショット 2023-12-13 22 59 40" src="https://github.com/Jun-Murakami/wlsib/assets/126404131/c2a355ec-d8fe-4d91-b63a-e10e1adb2f29">
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
