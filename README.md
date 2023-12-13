@@ -10,3 +10,5 @@ https://lensdore-c55ce.web.app/
 
 <img width="1197" alt="スクリーンショット 2023-12-13 22 59 40" src="https://github.com/Jun-Murakami/wlsib/assets/126404131/c2a355ec-d8fe-4d91-b63a-e10e1adb2f29">
 
+note記事
+https://note.com/junmurakami/n/n36b1e198f287
