@@ -17,8 +17,8 @@ import {
   Box,
   SelectChangeEvent,
 } from '@mui/material';
-import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { Stage, Layer, Rect, Image } from 'react-konva';
 import useImage from 'use-image';
 
@@ -215,40 +215,28 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
   );
 }
 
-const useRangeHandler = (initialValue: number, maxRange: number) => {
-  const [range, setRange] = useState(initialValue);
-
-  const handleRangeChange = (direction: 'left' | 'right') => {
-    setRange((prevRange) => {
-      if (direction === 'left' && prevRange > 0) return prevRange - 1;
-      if (direction === 'right' && prevRange < maxRange) return prevRange + 1;
-      return prevRange;
-    });
-  };
-
-  return [range, handleRangeChange] as const;
-};
-
-// propsの型を定義
+// RangeSliderPropsの型
 interface RangeSliderProps {
   min: number;
   max: number;
   value: number;
   step?: number;
+  minRange: number;
   onChange: (event: Event, newValue: number | number[]) => void;
-  onRangeChange: (direction: 'left' | 'right') => void;
+  onMaxIncrease: () => void;
+  onMaxDecrease: () => void;
 }
 
 // レンジ切り替えスライダーコンポーネント
-function RangeSlider({ min, max, value, step, onChange, onRangeChange }: RangeSliderProps) {
+function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
   return (
     <Stack direction='row' sx={{ width: '100%' }}>
-      <IconButton onClick={() => onRangeChange('left')} disabled={min === 0} sx={{ marginTop: -0.5 }}>
-        <ArrowLeftIcon />
-      </IconButton>
       <Slider step={step} sx={{ width: '100%' }} value={value} onChange={onChange} min={min} max={max} valueLabelDisplay='auto' />
-      <IconButton onClick={() => onRangeChange('right')} disabled={max === 1000} sx={{ marginTop: -0.5 }}>
-        <ArrowRightIcon />
+      <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5 }}>
+        <CloseFullscreenIcon fontSize='small'/>
+      </IconButton>
+      <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5 }}>
+        <OpenInFullIcon fontSize='small'/>
       </IconButton>
     </Stack>
   );
@@ -264,9 +252,9 @@ const App = () => {
   const [subjectHeight, setSubjectHeight] = useState<number>(160);
   const [letterbox, setLetterbox] = useState<LetterboxType>('');
   const [shootingAreaSize, setShootingAreaSize] = useState({ width: 0, height: 0 });
-  const [focalRange, handleFocalRangeChange] = useRangeHandler(0, 2);
-  const [subjectDistanceRange, handleSubjectDistanceRangeChange] = useRangeHandler(0, 2);
-  const [subjectHeightRange, handleSubjectHeightRangeChange] = useRangeHandler(0, 2);
+  const [maxFocalLength, setMaxFocalLength] = useState<number>(100);
+  const [maxSubjectDistance, setMaxSubjectDistance] = useState<number>(10);
+  const [maxSubjectHeight, setMaxSubjectHeight] = useState<number>(200);
 
   // センサーサイズや焦点距離が変更されたときに撮影範囲を再計算
   useEffect(() => {
@@ -310,6 +298,18 @@ const App = () => {
     const selectedValue = event.target.value as LetterboxType;
     setLetterbox(selectedValue);
   };
+
+  const createRangeHandler = (setter: SetValueFunction, min: number, max: number, step: number) => (increase: boolean) => {
+    setter((prevValue: number) => {
+      const newValue = prevValue + (increase ? step : -step);
+      return Math.min(Math.max(newValue, min), max);
+    });
+  };
+
+  const handleMaxFocalLengthChange = createRangeHandler(setMaxFocalLength, 100, 1000, 100);
+const handleMaxSubjectDistanceChange = createRangeHandler(setMaxSubjectDistance, 10, 1000, 10);
+const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100, 2000, 100);
+
 
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
@@ -371,17 +371,19 @@ const App = () => {
         <Input
           value={focalLength}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setFocalLength)}
           inputProps={{ step: 1, min: 0, max: 2000, type: 'number', 'aria-label': 'レンズ焦点距離' }}
         />
         <RangeSlider
-          min={focalRange * 200}
-          max={(focalRange + 1) * 200}
+          min={0}
+          max={maxFocalLength}
+          minRange={100}
           step={1}
           value={focalLength}
           onChange={handleSliderChange(setFocalLength)}
-          onRangeChange={handleFocalRangeChange}
+          onMaxIncrease={() => handleMaxFocalLengthChange(true)}
+          onMaxDecrease={() => handleMaxFocalLengthChange(false)}
         />
       </Stack>
 
@@ -393,17 +395,19 @@ const App = () => {
         <Input
           value={subjectDistance}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setSubjectDistance)}
           inputProps={{ step: 0.1, min: 0, max: 2000, type: 'number', 'aria-label': '被写体までの距離' }}
         />
         <RangeSlider
+          min={0}
+          max={maxSubjectDistance}
+          minRange={10}
+          step={0.1}
           value={subjectDistance}
           onChange={handleSliderChange(setSubjectDistance)}
-          onRangeChange={handleSubjectDistanceRangeChange}
-          step={0.1}
-          min={subjectDistanceRange * 10}
-          max={(subjectDistanceRange + 1) * 10}
+          onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
+          onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
         />
       </Stack>
 
@@ -415,17 +419,19 @@ const App = () => {
         <Input
           value={subjectHeight}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setSubjectHeight)}
           inputProps={{ step: 1, min: 0, max: 20000, type: 'number', 'aria-label': '被写体の身長' }}
         />
         <RangeSlider
+          min={0}
+          max={maxSubjectHeight}
+          minRange={100}
+          step={1}
           value={subjectHeight}
           onChange={handleSliderChange(setSubjectHeight)}
-          onRangeChange={handleSubjectHeightRangeChange}
-          step={1}
-          min={subjectHeightRange * 200}
-          max={(subjectHeightRange + 1) * 200}
+          onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
+          onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
         />
       </Stack>
 
