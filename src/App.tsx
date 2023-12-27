@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { debounce } from 'lodash';
 import {
+  IconButton,
   Container,
   FormControl,
   InputLabel,
@@ -16,6 +17,8 @@ import {
   Box,
   SelectChangeEvent,
 } from '@mui/material';
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { Stage, Layer, Rect, Image } from 'react-konva';
 import useImage from 'use-image';
 
@@ -212,16 +215,46 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
   );
 }
 
+// RangeSliderPropsの型
+interface RangeSliderProps {
+  min: number;
+  max: number;
+  value: number;
+  step?: number;
+  minRange: number;
+  onChange: (event: Event, newValue: number | number[]) => void;
+  onMaxIncrease: () => void;
+  onMaxDecrease: () => void;
+}
+
+// レンジ切り替えスライダーコンポーネント
+function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
+  return (
+    <Stack direction='row' sx={{ width: '100%' }}>
+      <Slider step={step} sx={{ width: '100%' }} value={value} onChange={onChange} min={min} max={max} valueLabelDisplay='auto' />
+      <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5 }}>
+        <CloseFullscreenIcon fontSize='small'/>
+      </IconButton>
+      <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5 }}>
+        <OpenInFullIcon fontSize='small'/>
+      </IconButton>
+    </Stack>
+  );
+}
+
 // アプリケーションのメインコンポーネント
 const App = () => {
-  const [sensorSize, setSensorSize] = useState('35mm フルサイズ');
-  const [sensorWidth, setSensorWidth] = useState(36);
-  const [sensorHeight, setSensorHeight] = useState(24);
-  const [focalLength, setFocalLength] = useState(50);
-  const [subjectDistance, setSubjectDistance] = useState(2);
-  const [subjectHeight, setSubjectHeight] = useState(160);
+  const [sensorSize, setSensorSize] = useState<string>('35mm フルサイズ');
+  const [sensorWidth, setSensorWidth] = useState<number>(36);
+  const [sensorHeight, setSensorHeight] = useState<number>(24);
+  const [focalLength, setFocalLength] = useState<number>(50);
+  const [subjectDistance, setSubjectDistance] = useState<number>(2);
+  const [subjectHeight, setSubjectHeight] = useState<number>(160);
   const [letterbox, setLetterbox] = useState<LetterboxType>('');
   const [shootingAreaSize, setShootingAreaSize] = useState({ width: 0, height: 0 });
+  const [maxFocalLength, setMaxFocalLength] = useState<number>(100);
+  const [maxSubjectDistance, setMaxSubjectDistance] = useState<number>(10);
+  const [maxSubjectHeight, setMaxSubjectHeight] = useState<number>(200);
 
   // センサーサイズや焦点距離が変更されたときに撮影範囲を再計算
   useEffect(() => {
@@ -265,6 +298,18 @@ const App = () => {
     const selectedValue = event.target.value as LetterboxType;
     setLetterbox(selectedValue);
   };
+
+  const createRangeHandler = (setter: SetValueFunction, min: number, max: number, step: number) => (increase: boolean) => {
+    setter((prevValue: number) => {
+      const newValue = prevValue + (increase ? step : -step);
+      return Math.min(Math.max(newValue, min), max);
+    });
+  };
+
+  const handleMaxFocalLengthChange = createRangeHandler(setMaxFocalLength, 100, 1000, 100);
+const handleMaxSubjectDistanceChange = createRangeHandler(setMaxSubjectDistance, 10, 1000, 10);
+const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100, 2000, 100);
+
 
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
@@ -326,17 +371,19 @@ const App = () => {
         <Input
           value={focalLength}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setFocalLength)}
           inputProps={{ step: 1, min: 0, max: 2000, type: 'number', 'aria-label': 'レンズ焦点距離' }}
         />
-        <Slider
+        <RangeSlider
+          min={0}
+          max={maxFocalLength}
+          minRange={100}
+          step={1}
           value={focalLength}
           onChange={handleSliderChange(setFocalLength)}
-          aria-labelledby='input-slider'
-          min={0}
-          max={300}
-          valueLabelDisplay='auto'
+          onMaxIncrease={() => handleMaxFocalLengthChange(true)}
+          onMaxDecrease={() => handleMaxFocalLengthChange(false)}
         />
       </Stack>
 
@@ -348,18 +395,19 @@ const App = () => {
         <Input
           value={subjectDistance}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setSubjectDistance)}
           inputProps={{ step: 0.1, min: 0, max: 2000, type: 'number', 'aria-label': '被写体までの距離' }}
         />
-        <Slider
+        <RangeSlider
+          min={0}
+          max={maxSubjectDistance}
+          minRange={10}
+          step={0.1}
           value={subjectDistance}
           onChange={handleSliderChange(setSubjectDistance)}
-          aria-labelledby='input-slider'
-          step={0.1}
-          min={0}
-          max={50}
-          valueLabelDisplay='auto'
+          onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
+          onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
         />
       </Stack>
 
@@ -371,17 +419,19 @@ const App = () => {
         <Input
           value={subjectHeight}
           size='small'
-          sx={{ width: 80 }}
+          sx={{ width: 60 }}
           onChange={handleInputChange(setSubjectHeight)}
           inputProps={{ step: 1, min: 0, max: 20000, type: 'number', 'aria-label': '被写体の身長' }}
         />
-        <Slider
+        <RangeSlider
+          min={0}
+          max={maxSubjectHeight}
+          minRange={100}
+          step={1}
           value={subjectHeight}
           onChange={handleSliderChange(setSubjectHeight)}
-          aria-labelledby='input-slider'
-          min={0}
-          max={250}
-          valueLabelDisplay='auto'
+          onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
+          onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
         />
       </Stack>
 
