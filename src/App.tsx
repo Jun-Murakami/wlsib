@@ -233,10 +233,10 @@ function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease,
     <Stack direction='row' sx={{ width: '100%' }}>
       <Slider step={step} sx={{ width: '100%' }} value={value} onChange={onChange} min={min} max={max} valueLabelDisplay='auto' />
       <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5 }}>
-        <CloseFullscreenIcon fontSize='small'/>
+        <CloseFullscreenIcon fontSize='small' />
       </IconButton>
       <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5 }}>
-        <OpenInFullIcon fontSize='small'/>
+        <OpenInFullIcon fontSize='small' />
       </IconButton>
     </Stack>
   );
@@ -307,9 +307,8 @@ const App = () => {
   };
 
   const handleMaxFocalLengthChange = createRangeHandler(setMaxFocalLength, 100, 1000, 100);
-const handleMaxSubjectDistanceChange = createRangeHandler(setMaxSubjectDistance, 10, 1000, 10);
-const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100, 2000, 100);
-
+  const handleMaxSubjectDistanceChange = createRangeHandler(setMaxSubjectDistance, 10, 1000, 10);
+  const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100, 2000, 100);
 
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
@@ -473,7 +472,6 @@ const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100
 
       {/* クレジット */}
       <Stack spacing={0} sx={{ marginBottom: 2 }}>
-        <Typography variant='caption'>※スライダーを超える範囲は数値入力欄で指定してください</Typography>
         <Typography variant='caption' sx={{ marginTop: 2 }}>
           by Jun Murakami
         </Typography>
