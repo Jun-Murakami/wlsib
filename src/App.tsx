@@ -111,6 +111,19 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
       }
 
       setMmToPxScale(mmToPxScale); // スケーリングファクターを状態として保持する
+
+      const handleResize = () => {
+        if (boxRef.current) {
+          const { width, height } = boxRef.current.getBoundingClientRect();
+          setBoxSize({ width, height });
+        }
+      };
+
+      // ウィンドウリサイズ時のイベントリスナーを登録
+      window.addEventListener('resize', handleResize);
+
+      // コンポーネントのアンマウント時にイベントリスナーを削除
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, [focalLength, sensorHeight, sensorWidth, subjectDistance, boxSize, boxRef]);
 
@@ -156,13 +169,14 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
   const adjustedScaledWidth = adjustedLetterboxSize.width * adjustedScale;
   const adjustedScaledHeight = adjustedLetterboxSize.height * adjustedScale;
 
-  // 座標計算
+  // ImageのX座標計算
   const imageX = rectX + scaledWidth / 2;
+
   // ImageのY座標の計算
   let imageY;
   let imageOffsetY;
+  // レターボックスの選択有無によって計算方法を変更
   if (letterbox) {
-    // レターボックスが選択されている場合
     if (subjectDisplayHeightPx > adjustedScaledHeight) {
       // 被写体の高さがレターボックスの高さを超える場合、上に寄せる
       imageY = rectY + (scaledHeight - adjustedScaledHeight) / 2;
@@ -171,7 +185,6 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
       imageY = rectY + (adjustedScaledHeight - subjectDisplayHeightPx) / 2 + (scaledHeight - adjustedScaledHeight) / 2;
     }
   } else {
-    // レターボックスが選択されていない場合
     if (subjectDisplayHeightPx > scaledHeight) {
       // 被写体の高さが撮影範囲の高さを超える場合、上に寄せる
       imageY = rectY;
@@ -229,13 +242,44 @@ interface RangeSliderProps {
 
 // レンジ切り替えスライダーコンポーネント
 function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
+  // marksの値を生成
+  const sliderMarks = [
+    {
+      value: min,
+      label: `${min}`,
+    },
+    {
+      value: max,
+      label: `${max}`,
+    },
+  ];
+
+  const CustomSliderStyles = {
+    marginBottom: '-0.8em',
+    marginRight: '0.8em',
+    '& .MuiSlider-markLabel': {
+      marginTop: '-0.8em',
+      color: '#5a3fb5',
+      fontSize: '0.8em',
+    },
+  };
+
   return (
     <Stack direction='row' sx={{ width: '100%' }}>
-      <Slider step={step} sx={{ width: '100%' }} value={value} onChange={onChange} min={min} max={max} valueLabelDisplay='auto' />
-      <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5 }}>
+      <Slider
+        step={step}
+        sx={CustomSliderStyles}
+        value={value}
+        onChange={onChange}
+        min={min}
+        max={max}
+        valueLabelDisplay='auto'
+        marks={sliderMarks}
+      />
+      <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5, color: '#5a3fb5' }}>
         <CloseFullscreenIcon fontSize='small' />
       </IconButton>
-      <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5 }}>
+      <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5, color: '#5a3fb5' }}>
         <OpenInFullIcon fontSize='small' />
       </IconButton>
     </Stack>
@@ -477,7 +521,7 @@ const App = () => {
         </Typography>
         <Typography variant='caption' sx={{ marginBottom: 2 }}>
           お問い合わせは <Link href='https://twitter.com/jun_murakami'> X(Twitter) </Link> または{' '}
-          <Link href='https://note.com/junmurakami'> Note </Link> まで
+          <Link href='https://note.com/junmurakami'> note </Link> まで
         </Typography>
       </Stack>
     </Container>
