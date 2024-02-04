@@ -83,6 +83,13 @@ const calculateShootingArea = (
   return { width, height };
 };
 
+// 視野角を計算する関数（水平方向）
+const calculateFieldOfView = (focalLength: number, sensorWidth: number): number => {
+  const fieldOfViewRadians = 2 * Math.atan(sensorWidth / (2 * focalLength));
+  const fieldOfViewDegrees = fieldOfViewRadians * (180 / Math.PI);
+  return fieldOfViewDegrees;
+};
+
 // 撮影範囲を表示するコンポーネント
 function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance, subjectHeight, letterbox }: ShootingAreaProps) {
   const boxRef = useRef<HTMLElement>(null);
@@ -299,11 +306,14 @@ const App = () => {
   const [maxFocalLength, setMaxFocalLength] = useState<number>(100);
   const [maxSubjectDistance, setMaxSubjectDistance] = useState<number>(10);
   const [maxSubjectHeight, setMaxSubjectHeight] = useState<number>(200);
+  const [fieldOfView, setFieldOfView] = useState<number>(0);
 
   // センサーサイズや焦点距離が変更されたときに撮影範囲を再計算
   useEffect(() => {
     const shootingArea = calculateShootingArea(sensorWidth, sensorHeight, focalLength, subjectDistance);
     setShootingAreaSize(shootingArea);
+    const fov = calculateFieldOfView(focalLength, sensorWidth);
+    setFieldOfView(fov);
   }, [sensorWidth, sensorHeight, focalLength, subjectDistance]);
 
   const handleSensorSizeChange = (event: SelectChangeEvent<string>) => {
@@ -403,7 +413,7 @@ const App = () => {
 
       {/* 撮影範囲の表示 */}
       <Typography variant={'body2'} sx={{ margintop: 0, marginBottom: 2 }}>
-        撮影範囲: {(shootingAreaSize.width / 1000).toFixed(2)} m x {(shootingAreaSize.height / 1000).toFixed(2)} m
+        撮影範囲: {(shootingAreaSize.width / 1000).toFixed(2)} m x {(shootingAreaSize.height / 1000).toFixed(2)} m | 視野角: {fieldOfView.toFixed(2)}°
       </Typography>
 
       {/* レンズ焦点距離 */}
