@@ -262,12 +262,12 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
   ];
 
   const CustomSliderStyles = {
-    marginBottom: '-0.8em',
-    marginRight: '0.8em',
+    marginBottom: -1,
+    marginRight: 1,
     '& .MuiSlider-markLabel': {
-      marginTop: '-0.8em',
+      marginTop: -1,
       color: '#5a3fb5',
-      fontSize: '0.8em',
+      fontSize: 1,
     },
   };
 
@@ -483,7 +483,7 @@ const App = () => {
         <Grid item xs={6} sm={3} md={3}>
           <TextField
             fullWidth
-            label='センサーサイズ 横 (mm)'
+            label='センサー 横 (mm)'
             value={sensorWidth}
             onChange={handleWidthChange}
             type='number'
@@ -493,7 +493,7 @@ const App = () => {
         <Grid item xs={6} sm={3} md={3}>
           <TextField
             fullWidth
-            label='センサーサイズ 縦 (mm)'
+            label='センサー 縦 (mm)'
             value={sensorHeight}
             onChange={handleHeightChange}
             type='number'
