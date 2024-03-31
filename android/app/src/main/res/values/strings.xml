@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ﾚﾝｽﾞ何持ってく?</string>
+    <string name="title_activity_main">ﾚﾝｽﾞ何持ってく?</string>
+    <string name="package_name">com.wlsib.app</string>
+    <string name="custom_url_scheme">com.wlsib.app</string>
+</resources>
