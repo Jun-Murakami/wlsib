@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.wlsib.app',
-  appName: 'ﾚﾝｽﾞ何持ってく?',
+  appName: 'ﾚﾝｽﾞ何持ってく',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
