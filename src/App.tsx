@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { debounce } from 'lodash';
 import {
   IconButton,
   Container,
@@ -237,18 +236,19 @@ function ShootingArea({ sensorWidth, sensorHeight, focalLength, subjectDistance,
 
 // RangeSliderPropsの型
 interface RangeSliderProps {
+  sliderLabel: string;
   min: number;
   max: number;
   value: number;
   step?: number;
   minRange: number;
-  onChange: (event: Event, newValue: number | number[]) => void;
+  onChange: (newValue: number) => void;
   onMaxIncrease: () => void;
   onMaxDecrease: () => void;
 }
 
 // レンジ切り替えスライダーコンポーネント
-function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
+function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
   // marksの値を生成
   const sliderMarks = [
     {
@@ -271,25 +271,47 @@ function RangeSlider({ min, max, value, step, minRange, onChange, onMaxIncrease,
     },
   };
 
+  const handleSliderChange = (_: Event, newValue: number | number[]) => {
+    const value = Array.isArray(newValue) ? newValue[0] : newValue;
+    onChange(value);
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value === '' ? 0 : Number(event.target.value);
+    onChange(newValue);
+  };
+
   return (
-    <Stack direction='row' sx={{ width: '100%' }}>
-      <Slider
-        step={step}
-        sx={CustomSliderStyles}
-        value={value}
-        onChange={onChange}
-        min={min}
-        max={max}
-        valueLabelDisplay='auto'
-        marks={sliderMarks}
-      />
-      <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ marginTop: -0.5, color: '#5a3fb5' }}>
-        <CloseFullscreenIcon fontSize='small' />
-      </IconButton>
-      <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ marginTop: -0.5, color: '#5a3fb5' }}>
-        <OpenInFullIcon fontSize='small' />
-      </IconButton>
-    </Stack>
+    <>
+      <Typography variant={'body2'} gutterBottom sx={{ marginBottom: -2 }}>
+        {sliderLabel}
+      </Typography>
+      <Stack direction='row' alignItems='center' spacing={0}>
+        <Input
+          value={value}
+          size='small'
+          sx={{ width: 62, mr: 2 }}
+          onChange={handleInputChange}
+          inputProps={{ step: step, min: min, max: max, type: 'number' }}
+        />
+        <Slider
+          step={step}
+          sx={CustomSliderStyles}
+          value={value}
+          onChange={handleSliderChange}
+          min={min}
+          max={max}
+          valueLabelDisplay='auto'
+          marks={sliderMarks}
+        />
+        <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ mt: 1, color: '#5a3fb5' }}>
+          <CloseFullscreenIcon fontSize='small' />
+        </IconButton>
+        <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ mt: 1, color: '#5a3fb5' }}>
+          <OpenInFullIcon fontSize='small' />
+        </IconButton>
+      </Stack>
+    </>
   );
 }
 
@@ -334,18 +356,6 @@ const App = () => {
   const handleHeightChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSensorHeight(Number(event.target.value));
     setSensorSize(''); // Selectの選択状態を解除
-  };
-
-  const handleSliderChange = (setValue: SetValueFunction) => {
-    return debounce((_: Event, newValue: number | number[]) => {
-      const value = Array.isArray(newValue) ? newValue[0] : newValue;
-      setValue(value);
-    }, 15); // 10ミリ秒のデバウンスを適用
-  };
-
-  const handleInputChange = (setValue: SetValueFunction) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value === '' ? 0 : Number(event.target.value);
-    setValue(value);
   };
 
   const handleLetterboxChange = (event: SelectChangeEvent<string>) => {
@@ -413,87 +423,55 @@ const App = () => {
 
       {/* 撮影範囲の表示 */}
       <Typography variant={'body2'} sx={{ margintop: 0, marginBottom: 2 }}>
-        撮影範囲: {(shootingAreaSize.width / 1000).toFixed(2)} m x {(shootingAreaSize.height / 1000).toFixed(2)} m | 視野角: {fieldOfView.toFixed(2)}°
+        撮影範囲: {(shootingAreaSize.width / 1000).toFixed(2)} m x {(shootingAreaSize.height / 1000).toFixed(2)} m | 視野角:{' '}
+        {fieldOfView.toFixed(2)}°
       </Typography>
 
       {/* レンズ焦点距離 */}
-      <Typography variant={'body2'} gutterBottom sx={{ marginBottom: -1 }}>
-        レンズ焦点距離 (mm)
-      </Typography>
-      <Stack spacing={2} direction='row' alignItems='center'>
-        <Input
-          value={focalLength}
-          size='small'
-          sx={{ width: 60 }}
-          onChange={handleInputChange(setFocalLength)}
-          inputProps={{ step: 1, min: 0, max: 2000, type: 'number', 'aria-label': 'レンズ焦点距離' }}
-        />
-        <RangeSlider
-          min={0}
-          max={maxFocalLength}
-          minRange={100}
-          step={1}
-          value={focalLength}
-          onChange={handleSliderChange(setFocalLength)}
-          onMaxIncrease={() => handleMaxFocalLengthChange(true)}
-          onMaxDecrease={() => handleMaxFocalLengthChange(false)}
-        />
-      </Stack>
+      <RangeSlider
+        sliderLabel='レンズ焦点距離 (mm)'
+        min={0}
+        max={maxFocalLength}
+        minRange={100}
+        step={1}
+        value={focalLength}
+        onChange={setFocalLength}
+        onMaxIncrease={() => handleMaxFocalLengthChange(true)}
+        onMaxDecrease={() => handleMaxFocalLengthChange(false)}
+      />
 
       {/* 被写体までの距離 */}
-      <Typography gutterBottom variant={'body2'} sx={{ marginBottom: -1 }}>
-        被写体までの距離 (m)
-      </Typography>
-      <Stack spacing={2} direction='row' alignItems='center'>
-        <Input
-          value={subjectDistance}
-          size='small'
-          sx={{ width: 60 }}
-          onChange={handleInputChange(setSubjectDistance)}
-          inputProps={{ step: 0.1, min: 0, max: 2000, type: 'number', 'aria-label': '被写体までの距離' }}
-        />
-        <RangeSlider
-          min={0}
-          max={maxSubjectDistance}
-          minRange={10}
-          step={0.1}
-          value={subjectDistance}
-          onChange={handleSliderChange(setSubjectDistance)}
-          onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
-          onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
-        />
-      </Stack>
+      <RangeSlider
+        sliderLabel='被写体までの距離 (m)'
+        min={0}
+        max={maxSubjectDistance}
+        minRange={10}
+        step={0.1}
+        value={subjectDistance}
+        onChange={setSubjectDistance}
+        onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
+        onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
+      />
 
       {/* 被写体の身長 */}
-      <Typography gutterBottom variant={'body2'} sx={{ marginBottom: -1 }}>
-        被写体の身長 (cm)
-      </Typography>
-      <Stack spacing={2} direction='row' alignItems='center'>
-        <Input
-          value={subjectHeight}
-          size='small'
-          sx={{ width: 60 }}
-          onChange={handleInputChange(setSubjectHeight)}
-          inputProps={{ step: 1, min: 0, max: 20000, type: 'number', 'aria-label': '被写体の身長' }}
-        />
-        <RangeSlider
-          min={0}
-          max={maxSubjectHeight}
-          minRange={100}
-          step={1}
-          value={subjectHeight}
-          onChange={handleSliderChange(setSubjectHeight)}
-          onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
-          onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
-        />
-      </Stack>
+      <RangeSlider
+        sliderLabel='被写体の身長 (cm)'
+        min={0}
+        max={maxSubjectHeight}
+        minRange={100}
+        step={1}
+        value={subjectHeight}
+        onChange={setSubjectHeight}
+        onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
+        onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
+      />
 
       {/* センサーサイズ */}
       <Grid container spacing={2} marginTop={2} marginBottom={2}>
         <Grid item xs={12} sm={6} md={6}>
           <FormControl fullWidth>
             <InputLabel>センサーサイズプリセット</InputLabel>
-            <Select value={sensorSize} label='センサーサイズプリセット' onChange={handleSensorSizeChange}>
+            <Select value={sensorSize} label='センサーサイズプリセット' onChange={handleSensorSizeChange} size='small'>
               {sensorSizes.map((size) => (
                 <MenuItem key={size.label} value={size.label}>
                   {size.label}
@@ -503,18 +481,32 @@ const App = () => {
           </FormControl>
         </Grid>
         <Grid item xs={6} sm={3} md={3}>
-          <TextField fullWidth label='センサーサイズ 横 (mm)' value={sensorWidth} onChange={handleWidthChange} type='number' />
+          <TextField
+            fullWidth
+            label='センサーサイズ 横 (mm)'
+            value={sensorWidth}
+            onChange={handleWidthChange}
+            type='number'
+            size='small'
+          />
         </Grid>
         <Grid item xs={6} sm={3} md={3}>
-          <TextField fullWidth label='センサーサイズ 縦 (mm)' value={sensorHeight} onChange={handleHeightChange} type='number' />
+          <TextField
+            fullWidth
+            label='センサーサイズ 縦 (mm)'
+            value={sensorHeight}
+            onChange={handleHeightChange}
+            type='number'
+            size='small'
+          />
         </Grid>
       </Grid>
 
       {/* レターボックスプリセット */}
       <Box sx={{ marginBottom: 2 }}>
         <FormControl fullWidth>
-          <InputLabel>ムービー/レターボックス</InputLabel>
-          <Select value={letterbox} label='ムービー/レターボックス' onChange={handleLetterboxChange}>
+          <InputLabel size='small'>ムービー/レターボックス</InputLabel>
+          <Select value={letterbox} label='ムービー/レターボックス' onChange={handleLetterboxChange} size='small'>
             <MenuItem value=''>レターボックスなし</MenuItem>
             <MenuItem value='fullhd'>HD/ワイドムービー - 1.78:1 (16:9)</MenuItem>
             <MenuItem value='europianvista'>ヨーロピアンビスタ - 1.66:1</MenuItem>
