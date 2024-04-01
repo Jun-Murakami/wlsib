@@ -11,7 +11,6 @@ import {
   Slider,
   Stack,
   Select,
-  Link,
   MenuItem,
   Box,
   SelectChangeEvent,
@@ -376,9 +375,11 @@ const App = () => {
 
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
+      {/* タイトル
       <Typography variant='h6' gutterBottom>
         レンズ何持ってく？
       </Typography>
+      */}
 
       <Grid container justifyContent='center'>
         <Grid item>
@@ -516,7 +517,7 @@ const App = () => {
         </FormControl>
       </Box>
 
-      {/* クレジット */}
+      {/* クレジット 
       <Stack spacing={0} sx={{ marginBottom: 2 }}>
         <Typography variant='caption' sx={{ marginTop: 2 }}>
           by Jun Murakami
@@ -526,6 +527,7 @@ const App = () => {
           <Link href='https://note.com/junmurakami'> note </Link> まで
         </Typography>
       </Stack>
+      */}
     </Container>
   );
 };
