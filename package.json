@@ -20,7 +20,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "firebase": "^10.7.1",
     "konva": "^9.2.3",
-    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-konva": "^18.2.10",
