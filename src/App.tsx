@@ -294,7 +294,7 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
         <Input
           value={value}
           size='small'
-          sx={{ width: 64, mr: 2, fontSize: '14px' }}
+          sx={{ width: 64, mr: 2 }}
           onChange={handleInputChange}
           inputProps={{ step: step, min: min, max: max, type: 'number' }}
         />
@@ -396,8 +396,8 @@ const App = () => {
           left: '50%',
           transform: 'translateX(-50%)',
           marginBottom: 0,
-          height: 'calc(100vh - 396px)',
-          width: 'calc(100vh - 396px)',
+          height: 'calc(100vh - 450px)',
+          width: 'calc(100vh - 450px)',
           minHeight: '250px',
           minWidth: '250px',
           maxHeight: '92vw',
