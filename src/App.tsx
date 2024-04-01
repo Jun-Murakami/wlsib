@@ -294,7 +294,7 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
         <Input
           value={value}
           size='small'
-          sx={{ width: 62, mr: 2 }}
+          sx={{ width: 64, mr: 2, fontSize: '0.9em' }}
           onChange={handleInputChange}
           inputProps={{ step: step, min: min, max: max, type: 'number' }}
         />

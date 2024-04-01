@@ -16,7 +16,7 @@
     "@capacitor/ios": "^5.7.4",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@fontsource/m-plus-1p": "^5.0.17",
+    "@fontsource/biz-udpgothic": "^5.0.18",
     "@mui/icons-material": "^5.15.14",
     "@mui/material": "^5.15.14",
     "@vitejs/plugin-react": "^4.2.1",
