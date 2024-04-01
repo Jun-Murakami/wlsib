@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   IconButton,
+  Card,
   Container,
+  Divider,
   FormControl,
   InputLabel,
   Typography,
   Grid,
   Input,
+  Link,
+  Modal,
   TextField,
   Slider,
   Stack,
@@ -17,6 +21,7 @@ import {
 } from '@mui/material';
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Stage, Layer, Rect, Image } from 'react-konva';
 import useImage from 'use-image';
 
@@ -264,9 +269,9 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
     marginBottom: -1,
     marginRight: 1,
     '& .MuiSlider-markLabel': {
-      marginTop: -1,
+      marginTop: -1.5,
       color: '#5a3fb5',
-      fontSize: 1,
+      fontSize: '0.8em',
     },
   };
 
@@ -303,10 +308,10 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
           valueLabelDisplay='auto'
           marks={sliderMarks}
         />
-        <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ mt: 1, color: '#5a3fb5' }}>
+        <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ mt: 1, mr: -1, color: '#5a3fb5' }}>
           <CloseFullscreenIcon fontSize='small' />
         </IconButton>
-        <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ mt: 1, color: '#5a3fb5' }}>
+        <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ mt: 1, mr: -1, color: '#5a3fb5' }}>
           <OpenInFullIcon fontSize='small' />
         </IconButton>
       </Stack>
@@ -328,6 +333,7 @@ const App = () => {
   const [maxSubjectDistance, setMaxSubjectDistance] = useState<number>(10);
   const [maxSubjectHeight, setMaxSubjectHeight] = useState<number>(200);
   const [fieldOfView, setFieldOfView] = useState<number>(0);
+  const [openModal, setOpenModal] = useState<boolean>(false);
 
   // センサーサイズや焦点距離が変更されたときに撮影範囲を再計算
   useEffect(() => {
@@ -373,54 +379,66 @@ const App = () => {
   const handleMaxSubjectDistanceChange = createRangeHandler(setMaxSubjectDistance, 10, 1000, 10);
   const handleMaxSubjectHeightChange = createRangeHandler(setMaxSubjectHeight, 100, 2000, 100);
 
+  const handleModalOpen = () => {
+    setOpenModal(true);
+  };
+  const handleModalClose = () => {
+    setOpenModal(false);
+  };
+
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
-      {/* タイトル
-      <Typography variant='h6' gutterBottom>
-        レンズ何持ってく？
-      </Typography>
-      */}
-
-      <Grid container justifyContent='center'>
-        <Grid item>
-          {/* キャンバス表示エリア */}
-          <Box
-            sx={{
-              position: 'relative',
-              padding: 2,
-              marginBottom: 0,
-              height: '45vh',
-              width: '45vh',
-              backgroundColor: '#ddd',
-              // ビューポートの高さに基づいてサイズを変更
-              '@media (max-aspect-ratio: 1/2)': {
-                height: '95vw',
-                width: '95vw',
-              },
-            }}
-          >
-            <ShootingArea
-              sensorWidth={sensorWidth}
-              sensorHeight={sensorHeight}
-              focalLength={focalLength}
-              subjectDistance={subjectDistance}
-              subjectHeight={subjectHeight}
-              letterbox={letterbox}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                zIndex: 1,
-                backgroundColor: 'transparent',
-              }}
-            />
-          </Box>
-        </Grid>
-      </Grid>
+      {/* キャンバス表示エリア */}
+      <Box
+        sx={{
+          position: 'relative',
+          padding: 2,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          marginBottom: 0,
+          height: 'calc(100vh - 396px)',
+          width: 'calc(100vh - 396px)',
+          minHeight: '250px',
+          minWidth: '250px',
+          maxHeight: '92vw',
+          maxWidth: '92vw',
+          backgroundColor: '#ddd',
+          // ビューポートの高さに基づいてサイズを変更
+          '@media (max-aspect-ratio: 1/2)': {
+            height: '92vw',
+            width: '92vw',
+          },
+        }}
+      >
+        {/* センサーサイズプリセットが縦でない場合だけタイトル表示 */}
+        {sensorWidth >= sensorHeight && (
+          <Typography variant='h6' sx={{ position: 'absolute', textAlign: 'center', width: 'calc(100% - 32px)' }}>
+            レンズ何持ってく？
+          </Typography>
+        )}
+        <ShootingArea
+          sensorWidth={sensorWidth}
+          sensorHeight={sensorHeight}
+          focalLength={focalLength}
+          subjectDistance={subjectDistance}
+          subjectHeight={subjectHeight}
+          letterbox={letterbox}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 1,
+            backgroundColor: 'transparent',
+          }}
+        />
+        <IconButton onClick={handleModalOpen} sx={{ position: 'absolute', left: 0, bottom: 0, zIndex: 2 }}>
+          <InfoOutlinedIcon />
+        </IconButton>
+      </Box>
 
       {/* 撮影範囲の表示 */}
       <Typography variant={'body2'} sx={{ margintop: 0, marginBottom: 2 }}>
@@ -428,106 +446,210 @@ const App = () => {
         {fieldOfView.toFixed(2)}°
       </Typography>
 
-      {/* レンズ焦点距離 */}
-      <RangeSlider
-        sliderLabel='レンズ焦点距離 (mm)'
-        min={0}
-        max={maxFocalLength}
-        minRange={100}
-        step={1}
-        value={focalLength}
-        onChange={setFocalLength}
-        onMaxIncrease={() => handleMaxFocalLengthChange(true)}
-        onMaxDecrease={() => handleMaxFocalLengthChange(false)}
-      />
+      <Box>
+        {/* レンズ焦点距離 */}
+        <RangeSlider
+          sliderLabel='レンズ焦点距離 (mm)'
+          min={0}
+          max={maxFocalLength}
+          minRange={100}
+          step={1}
+          value={focalLength}
+          onChange={setFocalLength}
+          onMaxIncrease={() => handleMaxFocalLengthChange(true)}
+          onMaxDecrease={() => handleMaxFocalLengthChange(false)}
+        />
 
-      {/* 被写体までの距離 */}
-      <RangeSlider
-        sliderLabel='被写体までの距離 (m)'
-        min={0}
-        max={maxSubjectDistance}
-        minRange={10}
-        step={0.1}
-        value={subjectDistance}
-        onChange={setSubjectDistance}
-        onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
-        onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
-      />
+        {/* 被写体までの距離 */}
+        <RangeSlider
+          sliderLabel='被写体までの距離 (m)'
+          min={0}
+          max={maxSubjectDistance}
+          minRange={10}
+          step={0.1}
+          value={subjectDistance}
+          onChange={setSubjectDistance}
+          onMaxIncrease={() => handleMaxSubjectDistanceChange(true)}
+          onMaxDecrease={() => handleMaxSubjectDistanceChange(false)}
+        />
 
-      {/* 被写体の身長 */}
-      <RangeSlider
-        sliderLabel='被写体の身長 (cm)'
-        min={0}
-        max={maxSubjectHeight}
-        minRange={100}
-        step={1}
-        value={subjectHeight}
-        onChange={setSubjectHeight}
-        onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
-        onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
-      />
+        {/* 被写体の身長 */}
+        <RangeSlider
+          sliderLabel='被写体の身長 (cm)'
+          min={0}
+          max={maxSubjectHeight}
+          minRange={100}
+          step={1}
+          value={subjectHeight}
+          onChange={setSubjectHeight}
+          onMaxIncrease={() => handleMaxSubjectHeightChange(true)}
+          onMaxDecrease={() => handleMaxSubjectHeightChange(false)}
+        />
 
-      {/* センサーサイズ */}
-      <Grid container spacing={2} marginTop={2} marginBottom={2}>
-        <Grid item xs={12} sm={6} md={6}>
-          <FormControl fullWidth>
-            <InputLabel>センサーサイズプリセット</InputLabel>
-            <Select value={sensorSize} label='センサーサイズプリセット' onChange={handleSensorSizeChange} size='small'>
-              {sensorSizes.map((size) => (
-                <MenuItem key={size.label} value={size.label}>
-                  {size.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        {/* センサーサイズ */}
+        <Grid container spacing={2} marginTop={2} marginBottom={2}>
+          <Grid item xs={12} sm={6} md={6}>
+            <FormControl fullWidth>
+              <InputLabel size='small'>センサーサイズプリセット</InputLabel>
+              <Select
+                value={sensorSize}
+                label='センサーサイズプリセット'
+                onChange={handleSensorSizeChange}
+                size='small'
+                MenuProps={{
+                  PaperProps: { sx: { maxHeight: '45vh' } },
+                }}
+              >
+                {sensorSizes.map((size) => (
+                  <MenuItem key={size.label} value={size.label}>
+                    {size.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              label='センサー 横 (mm)'
+              value={sensorWidth}
+              onChange={handleWidthChange}
+              type='number'
+              size='small'
+            />
+          </Grid>
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              label='センサー 縦 (mm)'
+              value={sensorHeight}
+              onChange={handleHeightChange}
+              type='number'
+              size='small'
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={6} sm={3} md={3}>
-          <TextField
-            fullWidth
-            label='センサー 横 (mm)'
-            value={sensorWidth}
-            onChange={handleWidthChange}
-            type='number'
-            size='small'
-          />
-        </Grid>
-        <Grid item xs={6} sm={3} md={3}>
-          <TextField
-            fullWidth
-            label='センサー 縦 (mm)'
-            value={sensorHeight}
-            onChange={handleHeightChange}
-            type='number'
-            size='small'
-          />
-        </Grid>
-      </Grid>
 
-      {/* レターボックスプリセット */}
-      <Box sx={{ marginBottom: 2 }}>
+        {/* レターボックスプリセット */}
         <FormControl fullWidth>
           <InputLabel size='small'>ムービー/レターボックス</InputLabel>
-          <Select value={letterbox} label='ムービー/レターボックス' onChange={handleLetterboxChange} size='small'>
+          <Select
+            value={letterbox}
+            label='ムービー/レターボックス'
+            onChange={handleLetterboxChange}
+            size='small'
+            MenuProps={{ PaperProps: { sx: { '& MuiList-root': { maxHeight: 200 } } } }}
+          >
             <MenuItem value=''>レターボックスなし</MenuItem>
             <MenuItem value='fullhd'>HD/ワイドムービー - 1.78:1 (16:9)</MenuItem>
             <MenuItem value='europianvista'>ヨーロピアンビスタ - 1.66:1</MenuItem>
             <MenuItem value='americanvista'>アメリカンビスタ - 1.85:1</MenuItem>
-            <MenuItem value='cinescope'>シネマスコープ (アナモルフィック無し) - 2.35:1</MenuItem>
+            <MenuItem value='cinescope'>シネマスコープ - 2.35:1</MenuItem>
           </Select>
         </FormControl>
-      </Box>
 
-      {/* クレジット 
-      <Stack spacing={0} sx={{ marginBottom: 2 }}>
-        <Typography variant='caption' sx={{ marginTop: 2 }}>
-          by Jun Murakami
-        </Typography>
-        <Typography variant='caption' sx={{ marginBottom: 2 }}>
-          お問い合わせは <Link href='https://twitter.com/jun_murakami'> X(Twitter) </Link> または{' '}
-          <Link href='https://note.com/junmurakami'> note </Link> まで
-        </Typography>
-      </Stack>
-      */}
+        {/* モーダル */}
+        <Modal
+          open={openModal}
+          onClose={handleModalClose}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Card sx={{ p: 2, height: '45vh', width: '90vw', maxWidth: '450px', overflow: 'auto' }}>
+            <Stack spacing={2}>
+              <Typography variant='caption' sx={{ marginTop: 2 }}>
+                ©{new Date().getFullYear()} Jun Murakami
+              </Typography>
+              <Typography variant='caption' sx={{ marginBottom: 2 }}>
+                お問い合わせは{' '}
+                <Link href='https://twitter.com/jun_murakami' target='_blank'>
+                  {' '}
+                  X(Twitter){' '}
+                </Link>{' '}
+                または{' '}
+                <Link href='https://note.com/junmurakami' target='_blank'>
+                  {' '}
+                  note{' '}
+                </Link>{' '}
+                まで
+              </Typography>
+              <Divider />
+              <Typography variant='caption'>
+                MUI Core: The MIT License (MIT)
+                <br />
+                <br />
+                Copyright (c) 2014 Call-Em-All
+                <br />
+                <br />
+                Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+                documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+                the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+                to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+                <br />
+                <br />
+                The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+                the Software.
+                <br />
+                <br />
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+                THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+                CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+                IN THE SOFTWARE.
+              </Typography>
+              <Divider />
+              <Typography variant='caption'>
+                capacitor: The MIT License (MIT)
+                <br />
+                <br />
+                (c) 2017-present Drifty Co.
+                <br />
+                <br />
+                Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+                documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+                the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+                to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+                <br />
+                <br />
+                The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+                the Software.
+                <br />
+                <br />
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+                THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+                CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+                IN THE SOFTWARE.
+              </Typography>
+              <Divider />
+              <Typography variant='caption'>
+                korva: MIT License
+                <br />
+                <br />
+                Original work Copyright (C) 2011 - 2013 by Eric Rowell (KineticJS)
+                <br />
+                Modified work Copyright (C) 2014 - present by Anton Lavrenov (Konva)
+                <br />
+                <br />
+                Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+                documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+                the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+                to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+                <br />
+                <br />
+                The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+                the Software.
+                <br />
+                <br />
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+                THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+                CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+                IN THE SOFTWARE.
+              </Typography>
+            </Stack>
+          </Card>
+        </Modal>
+      </Box>
     </Container>
   );
 };
