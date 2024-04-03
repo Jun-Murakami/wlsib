@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  useMediaQuery,
   IconButton,
+  Button,
   Card,
   Container,
   Divider,
@@ -9,7 +11,6 @@ import {
   Typography,
   Grid,
   Input,
-  Link,
   Modal,
   TextField,
   Slider,
@@ -19,6 +20,7 @@ import {
   Box,
   SelectChangeEvent,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -386,6 +388,10 @@ const App = () => {
     setOpenModal(false);
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const uiSize = isMobile ? 'small' : undefined;
+
   return (
     <Container sx={{ textAlign: 'center', justifyContent: 'center', width: '100%', padding: 2 }}>
       {/* キャンバス表示エリア */}
@@ -400,8 +406,8 @@ const App = () => {
           width: 'calc(100vh - 450px)',
           minHeight: '250px',
           minWidth: '250px',
-          maxHeight: '92vw',
-          maxWidth: '92vw',
+          maxHeight: { xs: '92vw', sm: '45vh' },
+          maxWidth: { xs: '92vw', sm: '45vh' },
           backgroundColor: '#ddd',
           // ビューポートの高さに基づいてサイズを変更
           '@media (max-aspect-ratio: 1/2)': {
@@ -435,7 +441,7 @@ const App = () => {
             backgroundColor: 'transparent',
           }}
         />
-        <IconButton onClick={handleModalOpen} sx={{ position: 'absolute', left: 0, bottom: 0, zIndex: 2 }}>
+        <IconButton onClick={handleModalOpen} sx={{ position: 'absolute', right: 0, bottom: 0, zIndex: 2 }}>
           <InfoOutlinedIcon />
         </IconButton>
       </Box>
@@ -490,12 +496,12 @@ const App = () => {
         <Grid container spacing={2} marginTop={2} marginBottom={2}>
           <Grid item xs={12} sm={6} md={6}>
             <FormControl fullWidth>
-              <InputLabel size='small'>センサーサイズプリセット</InputLabel>
+              <InputLabel size={uiSize}>センサーサイズプリセット</InputLabel>
               <Select
                 value={sensorSize}
                 label='センサーサイズプリセット'
                 onChange={handleSensorSizeChange}
-                size='small'
+                size={uiSize}
                 MenuProps={{
                   PaperProps: { sx: { maxHeight: '45vh' } },
                 }}
@@ -515,7 +521,7 @@ const App = () => {
               value={sensorWidth}
               onChange={handleWidthChange}
               type='number'
-              size='small'
+              size={uiSize}
             />
           </Grid>
           <Grid item xs={6} sm={3} md={3}>
@@ -525,19 +531,19 @@ const App = () => {
               value={sensorHeight}
               onChange={handleHeightChange}
               type='number'
-              size='small'
+              size={uiSize}
             />
           </Grid>
         </Grid>
 
         {/* レターボックスプリセット */}
         <FormControl fullWidth>
-          <InputLabel size='small'>ムービー/レターボックス</InputLabel>
+          <InputLabel size={uiSize}>ムービー/レターボックス</InputLabel>
           <Select
             value={letterbox}
             label='ムービー/レターボックス'
             onChange={handleLetterboxChange}
-            size='small'
+            size={uiSize}
             MenuProps={{ PaperProps: { sx: { '& MuiList-root': { maxHeight: 200 } } } }}
           >
             <MenuItem value=''>レターボックスなし</MenuItem>
@@ -556,21 +562,39 @@ const App = () => {
         >
           <Card sx={{ p: 2, height: '45vh', width: '90vw', maxWidth: '450px', overflow: 'auto' }}>
             <Stack spacing={2}>
-              <Typography variant='caption' sx={{ marginTop: 2 }}>
+              <Button
+                variant='outlined'
+                size='small'
+                component='a'
+                href='https://jun-murakami.web.app/'
+                target='_blank'
+                sx={{ marginTop: 2, textAlign: 'center', textTransform: 'none' }}
+              >
                 ©{new Date().getFullYear()} Jun Murakami
-              </Typography>
-              <Typography variant='caption' sx={{ marginBottom: 2 }}>
-                お問い合わせは{' '}
-                <Link href='https://twitter.com/jun_murakami' target='_blank'>
-                  {' '}
-                  X(Twitter){' '}
-                </Link>{' '}
-                または{' '}
-                <Link href='https://note.com/junmurakami' target='_blank'>
-                  {' '}
-                  note{' '}
-                </Link>{' '}
-                まで
+              </Button>
+              <Divider />
+              <Typography variant='caption'>
+                React: The MIT License (MIT)
+                <br />
+                <br />
+                Copyright (c) Meta Platforms, Inc. and affiliates.
+                <br />
+                <br />
+                Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+                documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+                the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+                to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+                <br />
+                <br />
+                The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+                the Software.
+                <br />
+                <br />
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+                THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+                CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+                IN THE SOFTWARE.
               </Typography>
               <Divider />
               <Typography variant='caption'>
@@ -598,7 +622,7 @@ const App = () => {
               </Typography>
               <Divider />
               <Typography variant='caption'>
-                capacitor: The MIT License (MIT)
+                Capacitor: The MIT License (MIT)
                 <br />
                 <br />
                 (c) 2017-present Drifty Co.

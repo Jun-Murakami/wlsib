@@ -38,26 +38,4 @@ export const theme = createTheme({
   typography: {
     ...typographyStyles,
   },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: `
-        html, body, #root {
-          height: 100%;
-          margin: 0;
-        },
-        ::-webkit-scrollbar {
-          width: 11px;
-          height: 11px;
-          background-color: #eeeeee;
-        },
-        ::-webkit-scrollbar:hover {
-          background-color: #cccccc;
-        },
-        ::-webkit-scrollbar-thumb {
-          background: #7c7d87;
-          opacity: 0.5;
-          border-radius: 6px;
-        },`,
-    },
-  },
 });
