@@ -26,6 +26,8 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Stage, Layer, Rect, Image } from 'react-konva';
 import useImage from 'use-image';
+import badgeApple from './assets/badge_apple_store.svg';
+import { Capacitor } from '@capacitor/core';
 
 // 型エイリアスの定義
 type SetValueFunction = (value: React.SetStateAction<number>) => void;
@@ -553,6 +555,17 @@ const App = () => {
             <MenuItem value='cinescope'>シネマスコープ - 2.35:1</MenuItem>
           </Select>
         </FormControl>
+
+        {!Capacitor.isNativePlatform() && (
+          <Button
+            sx={{ marginTop: 2 }}
+            component='a'
+            href='https://apps.apple.com/jp/app/%E3%83%AC%E3%83%B3%E3%82%BA%E4%BD%95%E6%8C%81%E3%81%A3%E3%81%A6%E3%81%8F/id6480391376'
+            target='_blank'
+          >
+            <img src={badgeApple} alt='App Store' />
+          </Button>
+        )}
 
         {/* モーダル */}
         <Modal
