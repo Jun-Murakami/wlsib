@@ -497,7 +497,7 @@ const App = () => {
 
         {/* センサーサイズ */}
         <Grid container spacing={2} marginTop={2} marginBottom={2}>
-          <Grid item xs={12} sm={6} md={6}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }}>
             <FormControl fullWidth>
               <InputLabel size={uiSize}>センサーサイズプリセット</InputLabel>
               <Select
@@ -517,7 +517,7 @@ const App = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={6} sm={3} md={3}>
+          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
             <TextField
               fullWidth
               label='センサー 横 (mm)'
@@ -527,7 +527,7 @@ const App = () => {
               size={uiSize}
             />
           </Grid>
-          <Grid item xs={6} sm={3} md={3}>
+          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
             <TextField
               fullWidth
               label='センサー 縦 (mm)'
