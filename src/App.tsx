@@ -74,6 +74,18 @@ type ShootingAreaProps = {
   letterbox: LetterboxType;
 };
 
+// 被写界深度（Depth of Field / DOF）を扱うための型
+type DepthOfFieldResult = {
+  // ハイパーフォーカル距離（mm）
+  hyperfocalMm: number;
+  // ピントが合う範囲の近点（mm）
+  nearLimitMm: number;
+  // ピントが合う範囲の遠点（mm）。無限遠になる場合は null
+  farLimitMm: number | null;
+  // 被写界深度（mm）。遠点が無限遠の場合は null
+  depthOfFieldMm: number | null;
+};
+
 // 撮影範囲を計算する関数
 const calculateShootingArea = (
   sensorWidth: number,
@@ -89,6 +101,68 @@ const calculateShootingArea = (
   const height = (sensorHeight * subjectDistanceMm) / focalLength;
 
   return { width, height };
+};
+
+/**
+ * 許容錯乱円（Circle of Confusion / CoC）を推定する関数。
+ *
+ * - **注意**: CoC は「最終的な鑑賞サイズ・鑑賞距離・許容するシャープさ」に依存するため、厳密な唯一解はありません。
+ * - ここでは一般的な近似として「センサー対角長 / 1500」を採用します。
+ *   - 例: 35mmフルサイズ（36x24mm）の対角は約43.27mm → CoC≈0.0288mm（よく使われる0.03mmに近い）
+ */
+const estimateCircleOfConfusionMm = (sensorWidth: number, sensorHeight: number): number => {
+  const diagonalMm = Math.sqrt(sensorWidth ** 2 + sensorHeight ** 2);
+  return diagonalMm / 1500;
+};
+
+/**
+ * 被写界深度（ピントの合う範囲）を計算する関数（薄レンズ近似・一般式）。
+ *
+ * 入力の単位:
+ * - focalLengthMm: mm
+ * - fNumber: 無次元（例: 2.8）
+ * - cocMm: mm（許容錯乱円）
+ * - subjectDistanceM: m（被写体までの距離）
+ *
+ * 代表的な一般式（mm系で統一）:
+ * - ハイパーフォーカル距離: H = f^2 / (N*c) + f
+ * - 近点: Dn = (H*s) / (H + (s - f))
+ * - 遠点: Df = (H*s) / (H - (s - f))   ※ s >= H の場合は無限遠（∞）
+ *
+ * ※ s はピントを合わせた距離（mm）。
+ */
+const calculateDepthOfField = ({
+  focalLengthMm,
+  fNumber,
+  cocMm,
+  subjectDistanceM,
+}: {
+  focalLengthMm: number;
+  fNumber: number;
+  cocMm: number;
+  subjectDistanceM: number;
+}): DepthOfFieldResult | null => {
+  // 0 や負数が入ると式が破綻するため、入力バリデーションして無効時は null を返す
+  if (focalLengthMm <= 0 || fNumber <= 0 || cocMm <= 0 || subjectDistanceM <= 0) return null;
+
+  // 距離を mm に統一
+  const sMm = subjectDistanceM * 1000;
+  const fMm = focalLengthMm;
+
+  // ハイパーフォーカル距離（mm）
+  const hyperfocalMm = (fMm * fMm) / (fNumber * cocMm) + fMm;
+
+  // 近点（mm）
+  const nearLimitMm = (hyperfocalMm * sMm) / (hyperfocalMm + (sMm - fMm));
+
+  // 遠点（mm）: 分母が 0 以下になると無限遠（または計算上不安定）なので null として扱う
+  const farDenominator = hyperfocalMm - (sMm - fMm);
+  const farLimitMm = farDenominator <= 0 ? null : (hyperfocalMm * sMm) / farDenominator;
+
+  // DOF（mm）: 遠点が無限遠の場合は null
+  const depthOfFieldMm = farLimitMm === null ? null : Math.max(0, farLimitMm - nearLimitMm);
+
+  return { hyperfocalMm, nearLimitMm, farLimitMm, depthOfFieldMm };
 };
 
 // 視野角を計算する関数（水平方向）
@@ -254,10 +328,31 @@ interface RangeSliderProps {
   onChange: (newValue: number) => void;
   onMaxIncrease: () => void;
   onMaxDecrease: () => void;
+  /**
+   * 最大値レンジ（拡大/縮小）ボタンを表示するかどうか。
+   * - デフォルト true（従来挙動）
+   * - 例: F値のように最大値を固定したい場合は false にする
+   */
+  showRangeButtons?: boolean;
 }
 
 // レンジ切り替えスライダーコンポーネント
-function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, onMaxIncrease, onMaxDecrease }: RangeSliderProps) {
+function RangeSlider({
+  sliderLabel,
+  min,
+  max,
+  value,
+  step,
+  minRange,
+  onChange,
+  onMaxIncrease,
+  onMaxDecrease,
+  showRangeButtons = true,
+}: RangeSliderProps) {
+  // スマホ幅では横並び要素が詰まりやすいので、各要素の幅配分を最適化する
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // marksの値を生成
   const sliderMarks = [
     {
@@ -271,12 +366,16 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
   ];
 
   const CustomSliderStyles = {
+    // スマホでは横幅が厳しいため、Slider自体は伸縮可能にしてレイアウト崩れを防ぐ
+    flexGrow: 1,
+    minWidth: 0,
     marginBottom: -1,
-    marginRight: 1,
+    // 余白は Slider の外側ではなく、コンテナ側で調整する（個別のズレを避ける）
     '& .MuiSlider-markLabel': {
       marginTop: -1.5,
       color: '#5a3fb5',
-      fontSize: '0.8em',
+      // スマホ時は目盛り文字が潰れやすいので少し小さくする
+      fontSize: isMobile ? '0.72rem' : '0.8em',
     },
   };
 
@@ -290,16 +389,28 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
     onChange(newValue);
   };
 
+  // 右側の「レンジ拡大/縮小」ボタン領域。
+  // - いまは F値だけ showRangeButtons=false のため、その時は領域を確保せず右端までSliderを伸ばす。
+  // - ボタンありのスライダーは従来どおり固定幅で領域確保する。
+  const rangeButtonsWidth = showRangeButtons ? (isMobile ? 64 : 76) : 6;
+
   return (
     <>
       <Typography variant={'body2'} gutterBottom sx={{ marginBottom: -2 }}>
         {sliderLabel}
       </Typography>
-      <Stack direction='row' alignItems='center' spacing={0}>
+      <Stack
+        direction='row'
+        alignItems='center'
+        spacing={0}
+        // 親の幅に合わせて、Input/Slider/ボタン領域を横並びで安定させる
+        sx={{ width: '100%' }}
+      >
         <Input
           value={value}
           size='small'
-          sx={{ width: 64, mr: 2 }}
+          // 数値表示領域は固定幅にして、項目間で左端が揃うようにする
+          sx={{ width: isMobile ? 34 : 64, mr: isMobile ? 1 : 2, flex: '0 0 auto' }}
           onChange={handleInputChange}
           inputProps={{ step: step, min: min, max: max, type: 'number' }}
         />
@@ -313,12 +424,44 @@ function RangeSlider({ sliderLabel, min, max, value, step, minRange, onChange, o
           valueLabelDisplay='auto'
           marks={sliderMarks}
         />
-        <IconButton onClick={onMaxDecrease} disabled={max <= minRange} sx={{ mt: 1, mr: -1, color: '#5a3fb5' }}>
-          <CloseFullscreenIcon fontSize='small' />
-        </IconButton>
-        <IconButton onClick={onMaxIncrease} disabled={max >= 1000} sx={{ mt: 1, mr: -1, color: '#5a3fb5' }}>
-          <OpenInFullIcon fontSize='small' />
-        </IconButton>
+        {/*
+          最大値レンジ操作ボタン。
+          - ユーザーが「スライダーの上限」を広げたり狭めたりできるUI。
+          - F値など上限固定の値では非表示にできるよう showRangeButtons を用意。
+        */}
+        <Box
+          // ボタンの有無で Slider の右端位置がズレるのを防ぐため、領域を常に確保する
+          sx={{
+            flex: '0 0 auto',
+            // showRangeButtons=false（F値）では 0 にして、Slider が右端いっぱいまで使えるようにする
+            width: rangeButtonsWidth,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+          }}
+        >
+          {showRangeButtons && (
+            <>
+              <IconButton
+                onClick={onMaxDecrease}
+                disabled={max <= minRange}
+                size='small'
+                // 余白のマイナス指定はレイアウト崩れの原因になりやすいので、paddingで調整
+                sx={{ color: '#5a3fb5', p: isMobile ? 0.5 : 0.75 }}
+              >
+                <CloseFullscreenIcon fontSize='small' />
+              </IconButton>
+              <IconButton
+                onClick={onMaxIncrease}
+                disabled={max >= 1000}
+                size='small'
+                sx={{ color: '#5a3fb5', p: isMobile ? 0.5 : 0.75 }}
+              >
+                <OpenInFullIcon fontSize='small' />
+              </IconButton>
+            </>
+          )}
+        </Box>
       </Stack>
     </>
   );
@@ -330,6 +473,7 @@ const App = () => {
   const [sensorWidth, setSensorWidth] = useState<number>(36);
   const [sensorHeight, setSensorHeight] = useState<number>(24);
   const [focalLength, setFocalLength] = useState<number>(50);
+  const [fNumber, setFNumber] = useState<number>(2.8);
   const [subjectDistance, setSubjectDistance] = useState<number>(2);
   const [subjectHeight, setSubjectHeight] = useState<number>(160);
   const [letterbox, setLetterbox] = useState<LetterboxType>('');
@@ -347,6 +491,19 @@ const App = () => {
     const fov = calculateFieldOfView(focalLength, sensorWidth);
     setFieldOfView(fov);
   }, [sensorWidth, sensorHeight, focalLength, subjectDistance]);
+
+  // センサーサイズから CoC（許容錯乱円）を推定（mm）
+  // - DOF（被写界深度）の一般式は CoC を必要とするため、内部では推定値を使って計算する
+  // - UI上は「CoC推定」を表示しない（ユーザー要望）
+  const cocMm = estimateCircleOfConfusionMm(sensorWidth, sensorHeight);
+
+  // 被写界深度（ピントの合う範囲）を計算
+  const dof = calculateDepthOfField({
+    focalLengthMm: focalLength,
+    fNumber,
+    cocMm,
+    subjectDistanceM: subjectDistance,
+  });
 
   const handleSensorSizeChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
@@ -450,12 +607,52 @@ const App = () => {
       </Box>
 
       {/* 撮影範囲の表示 */}
-      <Typography variant={'body2'} sx={{ margintop: 0, marginBottom: 2 }}>
+      <Typography
+        // caption はデフォルトで span になりインライン表示されやすいので、確実に改行させるため div にする
+        component='div'
+        variant={'caption'}
+        sx={{ display: 'block', width: '100%', marginTop: 0, marginBottom: 0, fontSize: '0.85rem' }}
+      >
         撮影範囲: {(shootingAreaSize.width / 1000).toFixed(2)} m x {(shootingAreaSize.height / 1000).toFixed(2)} m | 視野角:{' '}
         {fieldOfView.toFixed(2)}°
       </Typography>
+      <Typography
+        // 上と同様にブロック化して、ここから必ず次行にする
+        component='div'
+        variant={'caption'}
+        sx={{ display: 'block', width: '100%', marginTop: 0, marginBottom: 1, fontSize: '0.85rem' }}
+      >
+        ピントの合う範囲:{' '}
+        {dof
+          ? `${(dof.nearLimitMm / 1000).toFixed(2)} m 〜 ${
+              dof.farLimitMm === null ? '∞' : `${(dof.farLimitMm / 1000).toFixed(2)} m`
+            }（幅: ${dof.depthOfFieldMm === null ? '∞' : `${(dof.depthOfFieldMm / 1000).toFixed(2)} m`}）`
+          : '計算不可'}
+      </Typography>
 
       <Box>
+        {/* F値（絞り） */}
+        {/*
+          被写界深度（DOF）に直接効くパラメータ。
+          - 小さいほど: ボケやすい（DOFが浅い）
+          - 大きいほど: ピント範囲が広い（DOFが深い）
+        */}
+        <RangeSlider
+          sliderLabel='F値 (f/)'
+          // 念のため 0.5 まで下げておく（実在レンズの有無は問わず、シミュレーションとして許容）
+          min={0.5}
+          max={32}
+          minRange={32}
+          step={0.1}
+          value={fNumber}
+          onChange={setFNumber}
+          // F値は上限を固定したいのでレンジボタンは非表示にする
+          showRangeButtons={false}
+          // props上必須のため渡すが、上記でボタン非表示なので呼ばれない
+          onMaxIncrease={() => undefined}
+          onMaxDecrease={() => undefined}
+        />
+
         {/* レンズ焦点距離 */}
         <RangeSlider
           sliderLabel='レンズ焦点距離 (mm)'

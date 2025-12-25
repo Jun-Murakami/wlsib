@@ -1,7 +1,9 @@
 import { createTheme } from '@mui/material/styles';
 import '@fontsource/biz-udpgothic';
+import '@fontsource/barlow-semi-condensed';
 
 const fontFamilySet = [
+  '"Barlow Semi Condensed"',
   '"BIZ UDPGothic"',
   '-apple-system',
   'BlinkMacSystemFont',
